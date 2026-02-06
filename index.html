@@ -941,6 +941,20 @@
                             ctx.stroke();
 
                             ctx.restore();
+                        } else if (this.currentAttack && this.currentAttack.type === 'laser' && this.stats.type === 'bigboss' && this.specialImage) {
+                            // ビッグボスのレーザー攻撃を画像で描画
+                            ctx.save();
+                            const imgWidth = this.attackBox.width;
+                            const imgHeight = this.attackBox.height;
+
+                            // 画像を反転させる必要がある場合
+                            if (this.lastDirection < 0) {
+                                ctx.scale(-1, 1);
+                                ctx.drawImage(this.specialImage, -this.attackBox.x - imgWidth, this.attackBox.y, imgWidth, imgHeight);
+                            } else {
+                                ctx.drawImage(this.specialImage, this.attackBox.x, this.attackBox.y, imgWidth, imgHeight);
+                            }
+                            ctx.restore();
                         } else {
                             // 通常の攻撃ボックス描画
                             ctx.fillStyle = this.attackBox.color;
@@ -1246,18 +1260,20 @@
                                     this.isCharging = false;
                                     if (this.hitstunFrames > 0) { this.inAttackLag = false; return; }
                                     this.isAttacking = true;
+                                    // ビッグボスのサイズに合わせた必殺技（高さ127.5に合わせる）
                                     const bossLaser = { type: 'laser', reach: 300, duration: 400, damage: 18, baseKnockback: 8, knockbackScaling: 0.15, color: 'rgba(139, 0, 0, 0.9)' };
                                     this.currentAttack = bossLaser;
                                     this.attackBox = {
                                         x: this.lastDirection > 0 ? this.x + this.width : this.x - bossLaser.reach,
-                                        y: this.y + this.height / 2 - 50,
+                                        y: this.y,
                                         width: bossLaser.reach,
-                                        height: 100,
+                                        height: this.height, // ビッグボスの高さ（127.5）に合わせる
                                         color: bossLaser.color
                                     };
                                     setTimeout(() => {
                                         this.isAttacking = false;
                                         this.currentAttack = null;
+                                        this.attackBox = {}; // 攻撃判定を完全にクリア
                                         setTimeout(() => { this.inAttackLag = false; }, 400);
                                     }, bossLaser.duration);
                                 }, 200);
@@ -1301,7 +1317,7 @@
                                 this.attackBox = { x: this.lastDirection > 0 ? this.x + this.width : this.x - props.reach, y: this.y, width: props.reach, height: this.height, color: props.color };
                             }
                             setTimeout(() => {
-                                this.isAttacking = false; this.currentAttack = null; this.inAttackLag = true;
+                                this.isAttacking = false; this.currentAttack = null; this.attackBox = {}; this.inAttackLag = true;
                                 setTimeout(() => { this.inAttackLag = false; }, this.stats.type === 'yellow' ? SMASH_LAG_TIME + 200 : SMASH_LAG_TIME);
                             }, props.duration);
                         }, chargeTime);
@@ -1497,6 +1513,7 @@
                             setTimeout(() => {
                                 this.isAttacking = false;
                                 this.currentAttack = null;
+                                this.attackBox = {}; // 攻撃判定を完全にクリア
                                 setTimeout(() => { this.inAttackLag = false; }, 400);
                             }, explosionProps.duration);
                         } else {
@@ -1573,6 +1590,7 @@
                                 setTimeout(() => {
                                     this.isAttacking = false;
                                     this.currentAttack = null;
+                                    this.attackBox = {}; // 攻撃判定を完全にクリア
                                     this.inAttackLag = true;
                                     setTimeout(() => { this.inAttackLag = false; }, 300); // End lag
                                 }, props.duration);
@@ -1608,6 +1626,7 @@
                         setTimeout(() => {
                             this.isAttacking = false;
                             this.currentAttack = null;
+                            this.attackBox = {}; // 攻撃判定を完全にクリア
                             this.inAttackLag = true;
                             setTimeout(() => { this.inAttackLag = false; }, NORMAL_ATTACK_LAG_TIME);
                         }, props.duration);
@@ -1649,8 +1668,8 @@
 
             const p1AttackImage = p1Selection === '#800000' ? (function () { const img = new Image(); img.src = 'キャラクター/boos1.png'; return img; })() : null;
             const p2AttackImage = p2Selection === '#800000' ? (function () { const img = new Image(); img.src = 'キャラクター/boos1.png'; return img; })() : null;
-            const p1SpecialImage = p1Selection === '#800000' ? (function () { const img = new Image(); img.src = 'キャラクター/boos2.png'; return img; })() : null;
-            const p2SpecialImage = p2Selection === '#800000' ? (function () { const img = new Image(); img.src = 'キャラクター/boos2.png'; return img; })() : null;
+            const p1SpecialImage = p1Selection === '#800000' ? (function () { const img = new Image(); img.src = 'キャラクター/boos2 copy.png'; return img; })() : null;
+            const p2SpecialImage = p2Selection === '#800000' ? (function () { const img = new Image(); img.src = 'キャラクター/boos2 copy.png'; return img; })() : null;
 
             const player1 = new Player(0, 0, p1Selection, 'Player 1', projectiles, p1Image);
             if (p1AttackImage) player1.attackImage = p1AttackImage;
