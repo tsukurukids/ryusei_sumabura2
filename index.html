@@ -597,6 +597,7 @@
                     this.hitstunFrames = 0; // 行動不能フレーム数
                     this.isCharging = false; this.inAttackLag = false;
                     this.isDashing = false;
+                    this.isGiant = false;
                     this.attackBox = {}; this.currentAttack = null;
                     this.lastDirection = 1;
                     this.attackStartTime = 0; // 攻撃アニメーションの開始時間を記録するため
@@ -1249,13 +1250,17 @@
                                 // this.jump(); // Removed to prevent any upward movement
                                 // this.velocityY = 0; // Removed as there's no jump to reset
                                 this.isSizeChanging = true;
+                                this.isGiant = true;
                                 this.width = this.originalWidth * 3; // 3倍に変更
                                 this.height = this.originalHeight * 3; // 3倍に変更
+                                this.stats.weight *= 1.4; // 重さを1.4倍にする
                                 // Size change lasts for 4 seconds
                                 setTimeout(() => {
                                     this.width = this.originalWidth;
                                     this.height = this.originalHeight;
                                     this.isSizeChanging = false;
+                                    this.isGiant = false;
+                                    this.stats.weight /= 1.4; // 重さを元に戻す
                                 }, 4000); // 4秒に変更
                                 setTimeout(() => { this.inAttackLag = false; }, 300);
                                 break;
