@@ -8,6 +8,9 @@ let p1Ready = false;
 let p2Ready = false;
 let animationFrameId = null;
 let selectedStageIndex = 0;
+let isCpuMode = true;      // デフォルトは1人用（CPU対戦）
+let cpuDifficulty = 'easy'; // CPU難易度
+let cpuController = null;  // CPUコントローラー
 
 // --- UI Elements ---
 const p1Options = document.querySelectorAll('#p1-select .char-portrait');
@@ -24,11 +27,52 @@ const stageName = document.getElementById('stage-name');
 const fightBtn = document.getElementById('fight-btn');
 let gameOverOverlay, winnerText;
 
+
+// --- モード切替関数 ---
+function setGameMode(mode) {
+    isCpuMode = (mode === 'cpu');
+    const btn1p = document.getElementById('btn-1p');
+    const btn2p = document.getElementById('btn-2p');
+    const cpuDiffEl = document.getElementById('cpu-difficulty');
+    const p2Title = document.getElementById('p2-title');
+    const p2ReadyBtnEl = document.getElementById('p2-ready-btn');
+    if (isCpuMode) {
+        btn1p.classList.add('mode-btn-active');
+        btn2p.classList.remove('mode-btn-active');
+        if (cpuDiffEl) cpuDiffEl.style.display = '';
+        if (p2Title) p2Title.textContent = 'CPU';
+        if (p2ReadyBtnEl) p2ReadyBtnEl.style.display = 'none';
+        // CPUモードはP2自動選択
+        p2Ready = true;
+        checkReady();
+    } else {
+        btn1p.classList.remove('mode-btn-active');
+        btn2p.classList.add('mode-btn-active');
+        if (cpuDiffEl) cpuDiffEl.style.display = 'none';
+        if (p2Title) p2Title.textContent = 'Player 2';
+        if (p2ReadyBtnEl) p2ReadyBtnEl.style.display = '';
+        p2Ready = false;
+        checkReady();
+    }
+}
+
+function setCpuDifficulty(level) {
+    cpuDifficulty = level;
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('diff-btn-active'));
+    const target = document.getElementById('diff-' + level);
+    if (target) target.classList.add('diff-btn-active');
+}
+
 // --- UI Logic ---
 function updateCharacterAvailability() {
     if (!p1Options || !p2Options) return;
-    p1Options.forEach(opt => opt.classList.toggle('disabled', opt.dataset.color === p2Selection));
-    p2Options.forEach(opt => opt.classList.toggle('disabled', opt.dataset.color === p1Selection));
+    if (!isCpuMode) {
+        p1Options.forEach(opt => opt.classList.toggle('disabled', opt.dataset.color === p2Selection));
+        p2Options.forEach(opt => opt.classList.toggle('disabled', opt.dataset.color === p1Selection));
+    } else {
+        p1Options.forEach(opt => opt.classList.remove('disabled'));
+        p2Options.forEach(opt => opt.classList.remove('disabled'));
+    }
 }
 
 p1Options.forEach(p => p.addEventListener('click', () => {
@@ -50,7 +94,12 @@ p2Options.forEach(p => p.addEventListener('click', () => {
 }));
 
 function checkReady() {
-    startGameBtn.disabled = !(p1Ready && p2Ready);
+    if (isCpuMode) {
+        // CPUモード：P1だけreadyでOK、P2はCPUが自動選択
+        startGameBtn.disabled = !p1Ready;
+    } else {
+        startGameBtn.disabled = !(p1Ready && p2Ready);
+    }
 }
 
 p1ReadyBtn.addEventListener('click', () => {
@@ -86,6 +135,15 @@ p2ReadyBtn.addEventListener('click', () => {
 });
 
 startGameBtn.addEventListener('click', () => {
+    // CPUモード：P2のキャラをランダム選択（P1と被らないように）
+    if (isCpuMode) {
+        const colors = Object.keys(characterData);
+        const available = colors.filter(c => c !== p1Selection);
+        // P2がまだ未選択ならランダムに決める
+        if (!p2Selection || p2Selection === p1Selection) {
+            p2Selection = available[Math.floor(Math.random() * available.length)];
+        }
+    }
     charSelectScreen.classList.add('hidden');
     stageSelectScreen.classList.remove('hidden');
     renderStagePreview();
@@ -129,15 +187,30 @@ function resetToCharSelect() {
     if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
     if (keydownHandler) window.removeEventListener('keydown', keydownHandler);
     if (keyupHandler) window.removeEventListener('keyup', keyupHandler);
+    cpuController = null;
     gameScreen.classList.add('hidden');
     if (gameOverOverlay) gameOverOverlay.classList.add('hidden');
     charSelectScreen.classList.remove('hidden');
-    p1Ready = false; p2Ready = false; p1Selection = null; p2Selection = null;
-    p1ReadyBtn.classList.remove('ready'); p2ReadyBtn.classList.remove('ready');
-    p1ReadyBtn.textContent = '準備完了'; p2ReadyBtn.textContent = '準備完了';
+    p1Ready = false;
+    p1Selection = null;
+    p1ReadyBtn.classList.remove('ready');
+    p1ReadyBtn.textContent = '準備完了';
     p1Options.forEach(opt => opt.classList.remove('selected', 'disabled'));
-    p2Options.forEach(opt => opt.classList.remove('selected', 'disabled'));
-    p1Desc.textContent = 'キャラクターを選択してください'; p2Desc.textContent = 'キャラクターを選択してください';
+    p1Desc.textContent = 'キャラクターを選択してください';
+    if (!isCpuMode) {
+        p2Ready = false;
+        p2Selection = null;
+        p2ReadyBtn.classList.remove('ready');
+        p2ReadyBtn.textContent = '準備完了';
+        p2Options.forEach(opt => opt.classList.remove('selected', 'disabled'));
+        p2Desc.textContent = 'キャラクターを選択してください';
+    } else {
+        // CPUモードはP2のReadyは維持
+        p2Ready = true;
+        p2Selection = null;
+        p2Options.forEach(opt => opt.classList.remove('selected'));
+        p2Desc.textContent = 'キャラクターを選択してください';
+    }
     startGameBtn.disabled = true;
     if (winnerText) winnerText.textContent = '';
 }
@@ -153,9 +226,24 @@ function main(stageData) {
     winnerText = document.getElementById('winner-text');
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    const p1DamageEl = document.getElementById('p1-damage');
+    const p1LivesEl = document.getElementById('p1-lives');
+    const p2DamageEl = document.getElementById('p2-damage');
+    const p2LivesEl = document.getElementById('p2-lives');
     const controlsContainer = document.getElementById('game-controls-container');
-    controlsContainer.innerHTML = `
-        <div class="controls">
+    controlsContainer.innerHTML = isCpuMode
+        ? `<div class="controls">
+            <h3>Player 1 (${characterData[p1Selection].name})</h3>
+            <p><strong>移動:</strong> A/D | <strong>ジャンプ:</strong> W</p>
+            <p><strong>通常攻撃:</strong> Space</p>
+            <p><strong>スマッシュ:</strong> S | <strong>必殺ワザ1:</strong> E | <strong>必殺ワザ2:</strong> Q</p>
+        </div>
+        <div class="controls" style="opacity:0.7">
+            <h3>🤖 CPU (${characterData[p2Selection].name})</h3>
+            <p>難易度: ${cpuDifficulty === 'easy' ? '🟢 よわい' : cpuDifficulty === 'normal' ? '🟡 ふつう' : '🔴 つよい'}</p>
+            <p>CPUが自動操作します</p>
+        </div>`
+        : `<div class="controls">
             <h3>Player 1 (${characterData[p1Selection].name})</h3>
             <p><strong>移動:</strong> A/D | <strong>ジャンプ:</strong> W</p>
             <p><strong>通常攻撃:</strong> Space</p>
@@ -201,8 +289,30 @@ function main(stageData) {
 
     const player1 = new Player(0, 0, p1Selection, 'Player 1', window.projectiles, p1Image);
     if (p1BossImgs.norm) { player1.attackImage = p1BossImgs.norm; player1.specialImage = p1BossImgs.spec; player1.specialBodyImage = p1BossImgs.body; player1.smashImage = p1BossImgs.smash; }
-    const player2 = new Player(0, 0, p2Selection, 'Player 2', window.projectiles, p2Image);
+    const player2 = new Player(0, 0, p2Selection, isCpuMode ? 'CPU' : 'Player 2', window.projectiles, p2Image);
     if (p2BossImgs.norm) { player2.attackImage = p2BossImgs.norm; player2.specialImage = p2BossImgs.spec; player2.specialBodyImage = p2BossImgs.body; player2.smashImage = p2BossImgs.smash; }
+
+    // ゴールド：必殺技1中の画像をセット
+    function setSpecialImg(player, selection) {
+        if (selection === '#daa520') {
+            const img = new Image(); img.src = 'キャラクター/gold2.png';
+            player.specialImage = img;
+        }
+        if (selection === '#E0E0E0') {
+            const img = new Image(); img.src = 'キャラクター/ktara2.png';
+            player.specialImage = img;
+        }
+    }
+    setSpecialImg(player1, p1Selection);
+    setSpecialImg(player2, p2Selection);
+
+    // CPUコントローラーを初期化
+    if (isCpuMode) {
+        cpuController = new CPUController(player2, player1);
+        cpuController.setDifficulty(cpuDifficulty);
+    } else {
+        cpuController = null;
+    }
 
     const mainPlatform = platforms.reduce((a, b) => (a.width > b.width ? a : b), platforms[0]);
     player1.x = mainPlatform.x + mainPlatform.width * 0.25 - player1.width / 2;
@@ -231,17 +341,22 @@ function main(stageData) {
             else if (player1.isOnGround) player1.velocityX = 0;
         }
 
-        // P2 Controls
-        let p2Speed = player2.stats.speed; if (player2.isSlowed) p2Speed /= 2;
-        if (player2.hitstunFrames > 0) {
-            if (keys.arrowleft.pressed) player2.velocityX -= DI_INFLUENCE;
-            else if (keys.arrowright.pressed) player2.velocityX += DI_INFLUENCE;
-        } else if ((player2.isCharging && !player2.isChargingSpecial2) || player2.isDashing) {
-            player2.velocityX = player2.isDashing ? player2.velocityX : 0;
-        } else if (!player2.inAttackLag || (player2.currentAttack && player2.currentAttack.type === 'nova')) {
-            if (keys.arrowleft.pressed) { player2.velocityX = -p2Speed; player2.lastDirection = -1; }
-            else if (keys.arrowright.pressed) { player2.velocityX = p2Speed; player2.lastDirection = 1; }
-            else if (player2.isOnGround) player2.velocityX = 0;
+        // P2 Controls (2人用モードのみ)
+        if (!isCpuMode) {
+            let p2Speed = player2.stats.speed; if (player2.isSlowed) p2Speed /= 2;
+            if (player2.hitstunFrames > 0) {
+                if (keys.arrowleft.pressed) player2.velocityX -= DI_INFLUENCE;
+                else if (keys.arrowright.pressed) player2.velocityX += DI_INFLUENCE;
+            } else if ((player2.isCharging && !player2.isChargingSpecial2) || player2.isDashing) {
+                player2.velocityX = player2.isDashing ? player2.velocityX : 0;
+            } else if (!player2.inAttackLag || (player2.currentAttack && player2.currentAttack.type === 'nova')) {
+                if (keys.arrowleft.pressed) { player2.velocityX = -p2Speed; player2.lastDirection = -1; }
+                else if (keys.arrowright.pressed) { player2.velocityX = p2Speed; player2.lastDirection = 1; }
+                else if (player2.isOnGround) player2.velocityX = 0;
+            }
+        } else {
+            // CPUの操作
+            if (cpuController) cpuController.update();
         }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -251,9 +366,39 @@ function main(stageData) {
         window.projectiles.forEach((p, i) => {
             if (p.duration && (Date.now() - p.createdAt > p.duration)) { window.projectiles.splice(i, 1); return; }
             if (p.dir) p.x += 8 * p.dir; else { p.x += p.velocityX; p.y += p.velocityY; }
-            if (p.isCrossPart) ctx.fillStyle = Math.floor(Date.now() / 100) % 2 === 0 ? '#FFFFFF' : '#FF0000';
-            else ctx.fillStyle = p.owner.color;
-            ctx.fillRect(p.x, p.y, p.width || 8, p.height || 8);
+            if (p.color === '#kaze') {
+                if (!window.kazeImg) {
+                    window.kazeImg = new Image(); window.kazeImg.src = 'キャラクター/kaze.png';
+                }
+                if (window.kazeImg.complete) {
+                    ctx.save();
+                    if (p.owner.lastDirection < 0) {
+                        ctx.translate(p.x + p.width, p.y);
+                        ctx.scale(-1, 1);
+                        ctx.drawImage(window.kazeImg, 0, 0, p.width, p.height);
+                    } else {
+                        ctx.drawImage(window.kazeImg, p.x, p.y, p.width, p.height);
+                    }
+                    ctx.restore();
+                } else {
+                    ctx.fillStyle = 'rgba(200, 255, 200, 0.7)'; ctx.fillRect(p.x, p.y, p.width || 8, p.height || 8);
+                }
+            } else if (p.color === '#pinnku') {
+                if (!window.pinnkuImg) {
+                    window.pinnkuImg = new Image(); window.pinnkuImg.src = 'キャラクター/pinnku.png';
+                }
+                if (window.pinnkuImg.complete) {
+                    ctx.drawImage(window.pinnkuImg, p.x, p.y, p.width || 8, p.height || 8);
+                } else {
+                    ctx.fillStyle = 'pink'; ctx.fillRect(p.x, p.y, p.width || 8, p.height || 8);
+                }
+            } else if (p.isCrossPart) {
+                ctx.fillStyle = Math.floor(Date.now() / 100) % 2 === 0 ? '#FFFFFF' : '#FF0000';
+                ctx.fillRect(p.x, p.y, p.width || 8, p.height || 8);
+            } else {
+                ctx.fillStyle = p.color || p.owner.color;
+                ctx.fillRect(p.x, p.y, p.width || 8, p.height || 8);
+            }
             if (p.x < -100 || p.x > canvas.width + 100 || p.y < -100 || p.y > canvas.height + 100) window.projectiles.splice(i, 1);
         });
 
@@ -272,6 +417,21 @@ function main(stageData) {
         players.forEach(p => { p.update(platforms, window.earthBlocks); p.draw(ctx); });
         checkCollisions();
         checkRingOut();
+
+        if (player1.stats.type === 'black') {
+            p1DamageEl.textContent = `HP: ${Math.max(0, Math.floor(player1.hp))}`;
+        } else {
+            p1DamageEl.textContent = `${Math.floor(player1.damage)}%`;
+        }
+        p1LivesEl.textContent = `残機: ${player1.stocks}`;
+
+        if (player2.stats.type === 'black') {
+            p2DamageEl.textContent = `HP: ${Math.max(0, Math.floor(player2.hp))}`;
+        } else {
+            p2DamageEl.textContent = `${Math.floor(player2.damage)}%`;
+        }
+        p2LivesEl.textContent = `残機: ${player2.stocks}`;
+
         animationFrameId = requestAnimationFrame(gameLoop);
     }
 
@@ -355,24 +515,37 @@ function main(stageData) {
         else if (k === 's') player1.attack('smash');
         else if (k === 'e') player1.attack('special');
         else if (k === 'q') player1.attack('special2');
-        else if (k === 'arrowup') player2.jump();
-        else if (k === 'enter') player2.attack('normal');
-        else if (k === 'arrowdown') player2.attack('smash');
-        else if (k === '0') player2.attack('special');
-        else if (k === '.') player2.attack('special2');
+        // P2キー操作は2人用モードのみ
+        else if (!isCpuMode) {
+            if (k === 'arrowup') player2.jump();
+            else if (k === 'enter') player2.attack('normal');
+            else if (k === 'arrowdown') player2.attack('smash');
+            else if (k === '0') player2.attack('special');
+            else if (k === '.') player2.attack('special2');
+        }
     };
     keyupHandler = (e) => {
         const k = e.key.toLowerCase(); if (keys[k] !== undefined) {
             keys[k].pressed = false;
             if (k === 'q') player1.endCharge('special2');
             else if (k === 'e') player1.endCharge('special');
-            else if (k === '.') player2.endCharge('special2');
-            else if (k === '0') player2.endCharge('special');
             else if (k === ' ') player1.endCharge('normal');
-            else if (k === 'enter') player2.endCharge('normal');
+            if (!isCpuMode) {
+                if (k === '.') player2.endCharge('special2');
+                else if (k === '0') player2.endCharge('special');
+                else if (k === 'enter') player2.endCharge('normal');
+            }
         }
     };
     window.addEventListener('keydown', keydownHandler);
     window.addEventListener('keyup', keyupHandler);
     gameLoop();
 }
+
+// ページ読み込み時の初期化（デフォルト：1人用モード）
+document.addEventListener('DOMContentLoaded', () => {
+    // 初期状態でCPUモードUIを適用
+    const p2ReadyBtnEl = document.getElementById('p2-ready-btn');
+    if (p2ReadyBtnEl) p2ReadyBtnEl.style.display = 'none';
+    p2Ready = true; // CPUモードではP2のReadyは不要
+});

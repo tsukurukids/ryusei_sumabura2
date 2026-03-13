@@ -8,7 +8,7 @@ registerCharacter('white', {
             player.isAttacking = true;
             player.inAttackLag = true;
             player.attackStartTime = Date.now();
-            const tornadoProps = { type: 'tornado', reachX: 60, reachY: 120, duration: 500, damage: 9, baseKnockback: 7.2, knockbackScaling: 0.096, color: 'rgba(220, 220, 255, 0.7)' };
+            const tornadoProps = { type: 'tornado', reachX: 60, reachY: 120, duration: 500, damage: 9, baseKnockback: 7.2, knockbackScaling: 0.096, color: '#kaze' };
             player.currentAttack = tornadoProps;
             player.attackBox = { x: player.x + (player.width / 2) - (tornadoProps.reachX / 2), y: player.y - tornadoProps.reachY + player.height, width: tornadoProps.reachX, height: tornadoProps.reachY, color: tornadoProps.color };
             setTimeout(() => { player.isAttacking = false; player.currentAttack = null; }, tornadoProps.duration);
@@ -24,9 +24,16 @@ registerCharacter('white', {
                 // We need to trigger a "real" normal attack here
                 // But avoid infinite loop. We can call a helper.
                 player.isAttacking = true;
-                let props = { reach: 50, duration: 150, damage: 7, baseKnockback: 3.5, knockbackScaling: 0.08, color: 'rgba(255, 255, 0, 0.5)' };
+                let props = { reach: 147, duration: 250, damage: 7, baseKnockback: 3.5, knockbackScaling: 0.08, color: '#kaze' };
                 player.currentAttack = props;
-                player.attackBox = { x: player.lastDirection > 0 ? player.x + player.width : player.x - props.reach, y: player.y, width: props.reach, height: player.height, color: props.color };
+                let boxHeight = 80;
+                player.attackBox = { 
+                    x: player.lastDirection > 0 ? player.x + player.width : player.x - props.reach, 
+                    y: player.y + (player.height - boxHeight) / 2, 
+                    width: props.reach, 
+                    height: boxHeight, 
+                    color: props.color 
+                };
                 setTimeout(() => {
                     player.isAttacking = false; player.currentAttack = null; player.attackBox = {}; player.inAttackLag = true;
                     setTimeout(() => { player.inAttackLag = false; }, 100);

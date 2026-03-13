@@ -5,7 +5,7 @@ registerCharacter('blue', {
             if (!player.isOnGround) {
                 player.velocityY = -7;
                 player.isAttacking = true;
-                let props = { type: 'blue-aerial', reach: 70, duration: 250, damage: 9, baseKnockback: 7, knockbackScaling: 0.1, color: 'rgba(0, 191, 255, 0.7)' };
+                let props = { type: 'blue-aerial', reach: 70, duration: 250, damage: 4.5, baseKnockback: 7, knockbackScaling: 0.1, color: 'rgba(0, 191, 255, 0.7)' };
                 player.currentAttack = props;
                 player.attackBox = { x: player.lastDirection > 0 ? player.x + player.width : player.x - props.reach, y: player.y - 15, width: props.reach, height: player.height + 30, color: props.color };
                 setTimeout(() => {

@@ -12,6 +12,13 @@
 
     <div id="character-select-screen" class="screen">
         <h1>キャラクターを選択</h1>
+
+        <!-- モード選択 -->
+        <div id="mode-select" style="display:flex; justify-content:center; gap:14px; margin-bottom:6px;">
+            <button id="btn-1p" class="mode-btn mode-btn-active" onclick="setGameMode('cpu')">🎮 1人用（CPU対戦）</button>
+            <button id="btn-2p" class="mode-btn" onclick="setGameMode('2p')">👥 2人用（対戦）</button>
+        </div>
+
         <div class="select-container">
             <div id="p1-select" class="player-select">
                 <h2>Player 1</h2>
@@ -22,7 +29,9 @@
                     <div class="char-portrait" data-color="#50c878"
                         style="background-color: #50c878; background-image: url('キャラクター/midori.png'); background-size: cover; background-position: center;">
                     </div>
-                    <div class="char-portrait" data-color="#3498db" style="background-color: #3498db;"></div>
+                    <div class="char-portrait" data-color="#3498db"
+                        style="background-color: #3498db; background-image: url('キャラクター/kyara4.png'); background-size: cover; background-position: center;">
+                    </div>
                     <div class="char-portrait" data-color="#f1c40f"
                         style="background-color: #f1c40f; background-image: url('キャラクター/pawa.png'); background-size: cover; background-position: center;">
                     </div>
@@ -36,7 +45,9 @@
                     <div class="char-portrait" data-color="#FF8C00" style="background-color: #FF8C00;"></div>
                     <div class="char-portrait" data-color="#8B4513" style="background-color: #8B4513;"></div>
                     <div class="char-portrait" data-color="#4B0082" style="background-color: #4B0082;"></div>
-                    <div class="char-portrait" data-color="#FFC0CB" style="background-color: #FFC0CB;"></div>
+                    <div class="char-portrait" data-color="#FFC0CB"
+                        style="background-color: #FFC0CB; background-image: url('キャラクター/pinnku.png'); background-size: cover; background-position: center;">
+                    </div>
                     <div class="char-portrait" data-color="#000000"
                         style="background-color: #000000; background-image: url('キャラクター/kuro.png'); background-size: cover; background-position: center;">
                     </div>
@@ -55,7 +66,17 @@
                 <button id="p1-ready-btn" class="ready-btn">準備完了</button>
             </div>
             <div id="p2-select" class="player-select">
-                <h2>Player 2</h2>
+                <h2 id="p2-title">CPU</h2>
+                <!-- CPU難易度選択 -->
+                <div id="cpu-difficulty" style="margin-bottom:6px;">
+                    <p style="margin:2px 0; font-size:12px; color:#aaa;">難易度を選んでください</p>
+                    <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+                        <button class="diff-btn diff-btn-active" id="diff-easy" onclick="setCpuDifficulty('easy')">🟢
+                            よわい</button>
+                        <button class="diff-btn" id="diff-normal" onclick="setCpuDifficulty('normal')">🟡 ふつう</button>
+                        <button class="diff-btn" id="diff-hard" onclick="setCpuDifficulty('hard')">🔴 つよい</button>
+                    </div>
+                </div>
                 <div class="char-options">
                     <div class="char-portrait" data-color="#e94560"
                         style="background-color: #e94560; background-image: url('キャラ選択/kyara1.png'); background-size: cover; background-position: center;">
@@ -63,7 +84,9 @@
                     <div class="char-portrait" data-color="#50c878"
                         style="background-color: #50c878; background-image: url('キャラクター/midori.png'); background-size: cover; background-position: center;">
                     </div>
-                    <div class="char-portrait" data-color="#3498db" style="background-color: #3498db;"></div>
+                    <div class="char-portrait" data-color="#3498db"
+                        style="background-color: #3498db; background-image: url('キャラクター/kyara4.png'); background-size: cover; background-position: center;">
+                    </div>
                     <div class="char-portrait" data-color="#f1c40f"
                         style="background-color: #f1c40f; background-image: url('キャラクター/pawa.png'); background-size: cover; background-position: center;">
                     </div>
@@ -77,7 +100,9 @@
                     <div class="char-portrait" data-color="#FF8C00" style="background-color: #FF8C00;"></div>
                     <div class="char-portrait" data-color="#8B4513" style="background-color: #8B4513;"></div>
                     <div class="char-portrait" data-color="#4B0082" style="background-color: #4B0082;"></div>
-                    <div class="char-portrait" data-color="#FFC0CB" style="background-color: #FFC0CB;"></div>
+                    <div class="char-portrait" data-color="#FFC0CB"
+                        style="background-color: #FFC0CB; background-image: url('キャラクター/pinnku.png'); background-size: cover; background-position: center;">
+                    </div>
                     <div class="char-portrait" data-color="#000000"
                         style="background-color: #000000; background-image: url('キャラクター/kuro.png'); background-size: cover; background-position: center;">
                     </div>
@@ -115,7 +140,24 @@
             <h2 id="winner-text"></h2>
         </div>
         <h1>スマブラ風ゲーム</h1>
-        <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+        <div id="hud-container"
+            style="display: flex; justify-content: space-between; width: 1100px; margin: 0 auto; padding: 10px 20px; box-sizing: border-box; background-color: rgba(0, 0, 0, 0.7); color: white; border-radius: 10px 10px 0 0;">
+            <div id="p1-hud" style="text-align: left;">
+                <h3 id="p1-name" style="margin: 0; font-size: 20px; color: #e94560;">Player 1</h3>
+                <div id="p1-damage"
+                    style="font-size: 36px; font-weight: bold; margin: 5px 0; text-shadow: 2px 2px 4px #000;">0%</div>
+                <div id="p1-lives" style="font-size: 20px;">残機: 3</div>
+            </div>
+            <div id="p2-hud" style="text-align: right;">
+                <h3 id="p2-name" style="margin: 0; font-size: 20px; color: #3498db;">Player 2</h3>
+                <div id="p2-damage"
+                    style="font-size: 36px; font-weight: bold; margin: 5px 0; text-shadow: 2px 2px 4px #000;">0%</div>
+                <div id="p2-lives" style="font-size: 20px;">残機: 3</div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas" width="1100" height="650"></canvas>
         <div id="game-controls-container" class="controls-container"></div>
     </div>
 
@@ -142,6 +184,7 @@
     <script src="js/characters/bigboss.js"></script>
 
     <script src="js/player.js"></script>
+    <script src="js/cpu.js"></script>
     <script src="js/game.js"></script>
 </body>
 

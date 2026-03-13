@@ -24,7 +24,8 @@ registerCharacter('pink', {
                         width: 16, height: 16,
                         damage: 5,
                         baseKnockback: 0.5,
-                        knockbackScaling: 0.01
+                        knockbackScaling: 0.01,
+                        color: '#FF69B4'
                     });
                 }
                 player.inAttackLag = true;

@@ -37,7 +37,7 @@ registerCharacter('bigboss', {
             if (player.inAttackLag) return true;
             player.inAttackLag = true;
             player.isAttacking = true;
-            const explosionProps = { type: 'explosion', reach: 0, duration: 600, damage: 16, baseKnockback: 10, knockbackScaling: 0.15, color: 'rgba(255, 0, 0, 0.5)' };
+            const explosionProps = { type: 'explosion', reach: 0, duration: 600, damage: 8, baseKnockback: 10, knockbackScaling: 0.15, color: 'rgba(255, 0, 0, 0.5)' };
             player.currentAttack = explosionProps;
             const range = 100;
             player.attackBox = { x: player.x - range, y: player.y - range, width: player.width + range * 2, height: player.height + range * 2, color: explosionProps.color };

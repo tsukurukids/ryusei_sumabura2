@@ -167,16 +167,16 @@ class Player {
     releaseWhiteStorm() {
         this.inAttackLag = true;
         this.damage += 5;
-        const stormProps = { damage: 12, baseKnockback: 8, knockbackScaling: 0.1, velocity: 10, size: 80, duration: 800, color: 'rgba(200, 220, 255, 0.7)' };
+        const stormProps = { damage: 12, baseKnockback: 8, knockbackScaling: 0.1, velocity: 10, width: 147, height: 80, duration: 800, color: '#kaze' };
         this.projectiles.push({
-            x: this.x + (this.lastDirection > 0 ? this.width : -stormProps.size),
-            y: this.y + this.height / 2 - stormProps.size / 2,
+            x: this.x + (this.lastDirection > 0 ? this.width : -stormProps.width),
+            y: this.y + this.height / 2 - stormProps.height / 2,
             velocityX: stormProps.velocity * this.lastDirection,
             velocityY: 0,
             owner: this,
-            width: stormProps.size, height: stormProps.size,
+            width: stormProps.width, height: stormProps.height,
             damage: stormProps.damage, baseKnockback: stormProps.baseKnockback, knockbackScaling: stormProps.knockbackScaling,
-            color: stormProps.color, duration: stormProps.duration, createdAt: Date.now()
+            color: '#kaze', duration: stormProps.duration, createdAt: Date.now()
         });
         setTimeout(() => { this.inAttackLag = false; }, 400);
     }
@@ -249,6 +249,16 @@ class Player {
                 else if (this.currentAttack.type === 'laser' && this.specialBodyImage) currentImg = this.specialBodyImage;
                 else if (this.currentAttack.type === 'bigboss-smash' && this.smashImage) currentImg = this.smashImage;
             }
+            // ゴールド：必殺技1（pillar）中は specialImage に切替
+            if (this.stats.type === 'gold' && this.isAttacking && this.currentAttack &&
+                this.currentAttack.type === 'pillar' && this.specialImage) {
+                currentImg = this.specialImage;
+            }
+            // ホワイト：必殺技（tornado）中は specialImage に切替
+            if (this.stats.type === 'white' && this.isAttacking && this.currentAttack &&
+                this.currentAttack.type === 'tornado' && this.specialImage) {
+                currentImg = this.specialImage;
+            }
             ctx.drawImage(currentImg, drawX, drawY + vOffset, drawWidth, drawHeight);
         } else if (this.isCharging || this.isChargingSpecial2) {
             if (Math.floor(Date.now() / 100) % 2 === 0) {
@@ -284,11 +294,41 @@ class Player {
             const centerX = this.x + this.width / 2;
             const centerY = this.attackBox.y + this.attackBox.height / 2;
             ctx.save();
-            ctx.fillStyle = this.attackBox.color; ctx.globalAlpha = 0.7; ctx.translate(centerX, centerY);
-            for (let i = 0; i < 3; i++) {
-                ctx.rotate(angle + (i * Math.PI * 2 / 3));
-                const height = this.attackBox.height * (0.5 + (Math.sin(elapsed / 200 + i) * 0.1));
-                ctx.fillRect(-this.attackBox.width / 4, -height / 2, this.attackBox.width / 2, height);
+            ctx.translate(centerX, centerY);
+
+            if (this.attackBox.color === '#kaze' || this.currentAttack.color === '#kaze') {
+                if (!window.kazeImg) {
+                    window.kazeImg = new Image();
+                    window.kazeImg.src = 'キャラクター/kaze.png';
+                }
+                if (window.kazeImg.complete) {
+                    for (let i = 0; i < 3; i++) {
+                        ctx.save();
+                        ctx.rotate(angle + (i * Math.PI * 2 / 3));
+                        const height = this.attackBox.height * (0.5 + (Math.sin(elapsed / 200 + i) * 0.1));
+                        ctx.globalAlpha = 0.8;
+                        ctx.drawImage(window.kazeImg, -this.attackBox.width / 2, -height / 2, this.attackBox.width, height);
+                        ctx.restore();
+                    }
+                } else {
+                    ctx.fillStyle = 'rgba(200, 255, 200, 0.7)'; ctx.globalAlpha = 0.7;
+                    for (let i = 0; i < 3; i++) {
+                        ctx.save();
+                        ctx.rotate(angle + (i * Math.PI * 2 / 3));
+                        const height = this.attackBox.height * (0.5 + (Math.sin(elapsed / 200 + i) * 0.1));
+                        ctx.fillRect(-this.attackBox.width / 4, -height / 2, this.attackBox.width / 2, height);
+                        ctx.restore();
+                    }
+                }
+            } else {
+                ctx.fillStyle = this.attackBox.color; ctx.globalAlpha = 0.7;
+                for (let i = 0; i < 3; i++) {
+                    ctx.save();
+                    ctx.rotate(angle + (i * Math.PI * 2 / 3));
+                    const height = this.attackBox.height * (0.5 + (Math.sin(elapsed / 200 + i) * 0.1));
+                    ctx.fillRect(-this.attackBox.width / 4, -height / 2, this.attackBox.width / 2, height);
+                    ctx.restore();
+                }
             }
             ctx.restore();
         } else if (this.currentAttack && this.currentAttack.type === 'sword-swing') {
@@ -313,8 +353,29 @@ class Player {
             gradient.addColorStop(0, this.attackBox.color); gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.fillStyle = gradient; ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); ctx.fill();
         } else if (this.attackBox && this.attackBox.color) {
-            ctx.fillStyle = this.attackBox.color;
-            ctx.fillRect(this.attackBox.x, this.attackBox.y, this.attackBox.width, this.attackBox.height);
+            if (this.attackBox.color === '#kaze') {
+                if (!window.kazeImg) {
+                    window.kazeImg = new Image();
+                    window.kazeImg.src = 'キャラクター/kaze.png';
+                }
+                if (window.kazeImg.complete) {
+                    ctx.save();
+                    if (this.lastDirection < 0) {
+                        ctx.translate(this.attackBox.x + this.attackBox.width, this.attackBox.y);
+                        ctx.scale(-1, 1);
+                        ctx.drawImage(window.kazeImg, 0, 0, this.attackBox.width, this.attackBox.height);
+                    } else {
+                        ctx.drawImage(window.kazeImg, this.attackBox.x, this.attackBox.y, this.attackBox.width, this.attackBox.height);
+                    }
+                    ctx.restore();
+                } else {
+                    ctx.fillStyle = 'rgba(200, 255, 200, 0.7)';
+                    ctx.fillRect(this.attackBox.x, this.attackBox.y, this.attackBox.width, this.attackBox.height);
+                }
+            } else {
+                ctx.fillStyle = this.attackBox.color;
+                ctx.fillRect(this.attackBox.x, this.attackBox.y, this.attackBox.width, this.attackBox.height);
+            }
         }
     }
 
@@ -423,7 +484,7 @@ class Player {
     }
 
     respawn() {
-        this.x = this.name === 'Player 1' ? 200 : 550; this.y = 50; this.damage = 0;
+        this.x = this.name === 'Player 1' ? 275 : 825; this.y = 65; this.damage = 0;
         if (this.stats.type === 'black') this.hp = 120;
         this.velocityX = 0; this.velocityY = 0; this.hitstunFrames = 0; this.isInvincible = true;
         this.isGiant = false; this.isSmall = false; this.isSizeChanging = false;
