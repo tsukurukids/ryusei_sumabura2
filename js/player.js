@@ -21,6 +21,11 @@ class Player {
             this.height = 60;
             this.originalWidth = 60;
             this.originalHeight = 60;
+        } else if (this.stats.type === 'pink') {
+            this.width = 90;
+            this.height = 60;
+            this.originalWidth = 90;
+            this.originalHeight = 60;
         }
         this.velocityX = 0; this.velocityY = 0;
         this.jumpsLeft = 2; this.isOnGround = false;
@@ -69,14 +74,14 @@ class Player {
         if (type === 'special' && this.stats.type === 'kohaku') {
             this.isCharging = true;
             this.chargeStartTime = Date.now();
-        } else if (type === 'special2' && (this.stats.type === 'red' || this.stats.type === 'indigo' || this.stats.type === 'blue')) {
+        } else if (type === 'normal' && (this.stats.type === 'white' || this.stats.type === 'grey')) {
+            this.isCharging = true;
+            this.chargeStartTime = Date.now();
+        } else if (type === 'special2' && (this.stats.type === 'red' || this.stats.type === 'blue')) {
             if (this.isChargingSpecial2 || (this.stats.type === 'blue' && this.barrierUsed)) return;
             this.isChargingSpecial2 = true;
             this.chargeStartTime = Date.now();
             this.isCharging = true;
-        } else if (type === 'normal' && this.stats.type === 'white') {
-            this.isCharging = true;
-            this.chargeStartTime = Date.now();
         }
     }
 
@@ -90,13 +95,17 @@ class Player {
             this.releaseKohakuChargeBeam();
         } else if (type === 'special2' && this.stats.type === 'red') {
             this.releaseChargeBeam();
-        } else if (type === 'normal' && this.stats.type === 'white') {
+        } else if (type === 'normal' && (this.stats.type === 'white' || this.stats.type === 'grey')) {
             this.isCharging = false;
             const chargeDuration = Date.now() - this.chargeStartTime;
             if (chargeDuration < 300) {
                 this.attack('normal');
             } else {
-                this.releaseWhiteStorm();
+                if (this.stats.type === 'white') {
+                    this.releaseWhiteStorm();
+                } else if (this.stats.type === 'grey') {
+                    this.attack('normal');
+                }
             }
             return;
         }
@@ -229,6 +238,7 @@ class Player {
         else if (this.stats.type === 'gold') { scaleX = 2.2; scaleY = 1.8; }
         else if (this.stats.type === 'white') { scaleX = 1.8; scaleY = 1.8; }
         else if (this.stats.type === 'kohaku') { scaleX = 1.8; scaleY = 1.5; }
+        else if (this.stats.type === 'blue' || this.stats.type === 'pink') { scaleX = 2.25; scaleY = 2.25; }
 
         if (this.lastDirection === -1) { ctx.scale(-scaleX, scaleY); }
         else { ctx.scale(scaleX, scaleY); }

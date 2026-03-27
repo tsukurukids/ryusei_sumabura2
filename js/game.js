@@ -156,10 +156,10 @@ function renderStagePreview() {
     stage.platforms.forEach(p => {
         const pEl = document.createElement('div');
         pEl.style.position = 'absolute';
-        pEl.style.left = `${p.x / 800 * 100}%`;
-        pEl.style.top = `${p.y / 500 * 100}%`;
-        pEl.style.width = `${p.width / 800 * 100}%`;
-        pEl.style.height = `${p.height / 500 * 100}%`;
+        pEl.style.left = `${p.x / 1100 * 100}%`;
+        pEl.style.top = `${p.y / 650 * 100}%`;
+        pEl.style.width = `${p.width / 1100 * 100}%`;
+        pEl.style.height = `${p.height / 650 * 100}%`;
         pEl.style.backgroundColor = '#ddd';
         stagePreview.appendChild(pEl);
     });

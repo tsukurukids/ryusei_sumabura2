@@ -13,27 +13,36 @@ registerCharacter('indigo', {
             setTimeout(() => { player.inAttackLag = false; }, gravityProps.duration + 300);
             return true;
         } else if (type === 'special2') {
-            player.startCharge('special2');
-            return true;
-        }
-    },
-    endCharge: (player, type, projectiles, players) => {
-        if (type === 'special2') {
-            if (!player.isChargingSpecial2) return;
-            player.isChargingSpecial2 = false;
-            player.isCharging = false;
+            player.isAttacking = true;
             player.inAttackLag = true;
+            player.currentAttack = null; // 他の攻撃情報をリセット
+            player.attackBox = {};       // 他の攻撃の枠を消す
+            
+            const meteorProps = { width: 60, height: 60, damage: 15, baseKnockback: 8, knockbackScaling: 0.12, color: 'rgba(75, 0, 130, 0.9)' };
+            
+            // プレイヤーの斜め上の位置から隕石を出す
+            const startX = player.x + (player.lastDirection > 0 ? -30 : 30 + player.width);
+            const startY = player.y - 150;
+            
+            projectiles.push({
+                x: startX,
+                y: startY,
+                velocityX: 12 * player.lastDirection, // 斜め横
+                velocityY: 10,  // 下に向かって飛ぶ
+                owner: player,
+                width: meteorProps.width,
+                height: meteorProps.height,
+                damage: meteorProps.damage,
+                baseKnockback: meteorProps.baseKnockback,
+                knockbackScaling: meteorProps.knockbackScaling,
+                color: meteorProps.color,
+                duration: 2000,
+                createdAt: Date.now()
+            });
 
-            const pullOffset = 20;
-            const opponent = players.find(p => p !== player);
-
-            if (opponent) {
-                const targetX = player.x + player.lastDirection * (player.width / 2 + pullOffset) - opponent.width / 2;
-                opponent.x = targetX;
-                opponent.velocityY = -5;
-                opponent.hitstunFrames = 10;
-            }
-            setTimeout(() => { player.inAttackLag = false; }, 300);
+            setTimeout(() => { player.isAttacking = false; }, 300);
+            setTimeout(() => { player.inAttackLag = false; }, 400);
+            return true;
         }
     }
 });
